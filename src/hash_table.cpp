@@ -18,24 +18,61 @@ namespace itis {
     }
 
     // Tip: allocate hash-table buckets
+    buckets_.resize(capacity);
   }
 
   std::optional<std::string> HashTable::Search(int key) const {
+    int in = hash(key);
+    Bucket bucket = buckets_[in];
+    for (const auto &pair:bucket) {
+        if (pair.first == key) {
+            return pair.second;
+        }
+    }
     // Tip: compute hash code (index) and use linear search
     return std::nullopt;
   }
 
   void HashTable::Put(int key, const std::string &value) {
+    int index = hash(key);
+    for (std::pair<int, std::string> &pair: buckets_[index]) {
+        if (pair.first == key) {
+            pair.second = value;
+            return;
+        }
+    }
+    buckets_[index].push_back(std::pair(key, value));
+    num_keys_++;
     // Tip 1: compute hash code (index) to determine which bucket to use
     // Tip 2: consider the case when the key exists (read the docs in the header file)
 
     if (static_cast<double>(num_keys_) / buckets_.size() >= load_factor_) {
+        std::vector<Bucket> new_buckets = std::vector<Bucket>{};
+        auto new_size = buckets_.size() * kGrowthCoefficient;
+        new_buckets.resize(new_size);
+        for (Bucket &bucket: buckets_) {
+            for (std::pair<int, std::string> &pair: bucket) {
+                int new_index = utils::hash(pair.first, new_size);
+                new_buckets[new_index].push_back(pair);
+
+            }
+        }
+        buckets_ = new_buckets;
       // Tip 3: recompute hash codes (indices) for key-value pairs (create a new hash-table)
       // Tip 4: use utils::hash(key, size) to compute new indices for key-value pairs
     }
   }
 
   std::optional<std::string> HashTable::Remove(int key) {
+    int index = hash(key);
+    std::pair<int, std::string> remove;
+    for(const auto &pair:buckets_[index]){
+        if(pair.first == key){
+            remove = pair;
+            buckets_[index].remove(pair);
+            return remove.second;
+        }
+    }
     // Tip 1: compute hash code (index) to determine which bucket to use
     // TIp 2: find the key-value pair to remove and make a copy of value to return
     return std::nullopt;
